@@ -1,0 +1,44 @@
+func getHtml(urlString string) []string {
+	c := colly.NewCollector(
+		colly.AllowedDomains("en.wikipedia.org"),
+	)
+	var linkAndText []string
+
+	c.OnHTML(".mw-parser-output", func(e *colly.HTMLElement){
+		links := e.ChildAttr("a", "href")
+		fmt.Print(links)
+		text := e.ChildText("p")
+		// fmt.Print(text)
+		linkAndText = append(linkAndText, links, text)
+	})
+
+	if url, err := url.Parse(urlString); err != nil {
+		panic(err)
+	} else {
+		c.Visit(url.String())
+	}
+	
+	return linkAndText
+}
+
+
+func dataToCSV(data []string) {
+	fName := "data.txt"
+	file, err := os.Create(fName)
+	if err != nil {
+		log.Fatalf("Cannot create file %q: %s\n", fName, err)
+	}
+	defer file.Close()
+
+	writer := csv.NewWriter(file)
+	defer writer.Flush()
+
+	// Escreve cada linha do CSV com um link e texto
+	for i := 0; i < len(data); i += 2 {
+		record := []string{data[i], data[i+1]}
+		err := writer.Write(record)
+		if err != nil {
+			log.Fatalf("Error writing to CSV: %s\n", err)
+		}
+	}
+}
